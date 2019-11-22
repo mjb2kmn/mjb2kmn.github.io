@@ -1,0 +1,255 @@
+<!doctype html>
+<html lang="en">
+    <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>mjb2kmn</title>
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Source+Code+Pro|Source+Sans+Pro|Source+Serif+Pro">
+    <link rel="stylesheet" href="https://mjb2kmn.github.io//css/main.css">
+  </head>
+
+  <body>
+        <header>
+      <nav>
+        <ul>
+          <li class="brand"><a href="https://mjb2kmn.github.io/">mjb2kmn</a></li>
+
+          <li><a href="/post/">Posts</a></li>
+
+        </ul>
+      </nav>
+    </header>
+
+    <section class="main">
+      <article>
+        <header>Resizing a volume on a Virtual Machine guest without reboot</header>
+        <div class="meta">
+          <span class="date">2019-11-22</span>
+        </div>
+        <div class="content"><p>How to add storage space to a VM guest varies greatly depending on configuration, needs, and even personal preference.</p>
+
+<p>Here I will share how I do it on Ubuntu Server with an EXT formatted LVM root volume and separate boot partition. I will not cover resizing the virtual disk in VMware, VirtualBox, Parallels, etc.</p>
+
+<p>First check that we&rsquo;re at the same starting point.</p>
+
+<p>Looking at the output of <code>df -hT</code> you should see something like this:</p>
+
+<pre><code>Filesystem               Type      Size  Used Avail Use% Mounted on
+udev                     devtmpfs  956M     0  956M   0% /dev
+tmpfs                    tmpfs     197M  752K  197M   1% /run
+/dev/mapper/vg00-lv_root ext4      294G  235G   46G  84% /
+tmpfs                    tmpfs     985M     0  985M   0% /dev/shm
+tmpfs                    tmpfs     5.0M     0  5.0M   0% /run/lock
+tmpfs                    tmpfs     985M     0  985M   0% /sys/fs/cgroup
+/dev/sda1                ext3      453M  219M  211M  51% /boot
+tmpfs                    tmpfs     197M     0  197M   0% /run/user/1000
+</code></pre>
+
+<p>The partition <code>/dev/sda1</code> mounted on <code>/boot</code> will not be touched.</p>
+
+<p>We are only working with the <code>lv_root</code> volume shown on this line:</p>
+
+<pre><code>/dev/mapper/vg00-lv_root ext4      294G  235G   46G  84% /
+</code></pre>
+
+<p><strong>Notes</strong></p>
+
+<ul>
+<li>All commands require <code>root</code> access</li>
+<li>In this process I will use <code>fdisk</code> to recreate the partition. If you need to handle a disk larger than 2TB you will need to use <code>parted</code> or <code>gdisk</code>; those will not be covered here.</li>
+</ul>
+
+<h2 id="outline">Outline</h2>
+
+<ul>
+<li>Rescan the block device to recognize the new size</li>
+<li>Recreate the partition table to reflect the new size</li>
+<li>Resize the LVM Physical Volume and Logical Volume</li>
+<li>Resize the Filesystem</li>
+</ul>
+
+<h3 id="rescan-the-block-device">Rescan the block device</h3>
+
+<p>In order for the kernel to see the new size of the disk, we need to tell it to rescan the device.</p>
+
+<pre><code>root@ubuntu:~# echo 1 &gt; /sys/class/block/sda/rescan
+</code></pre>
+
+<h3 id="recreate-partition-table">Recreate partition table</h3>
+
+<p>This is the scary part. A mistake here can cause data loss, however, done right this has been 100% reliable for me dozens of times. If you&rsquo;ve not done this before I recommend practicing on a test system first. And, of course, always backup important data before doing something like this.</p>
+
+<h4 id="outline-1">Outline</h4>
+
+<ul>
+<li>delete logical partition used by LVM</li>
+<li>delete extended partition that held logical LVM partition</li>
+<li>create new extenended partition using all available space</li>
+<li>create new logical parition using all available space</li>
+<li>DO NOT remove <code>LVM2_member</code> signature when prompted</li>
+</ul>
+
+<h4 id="details">Details</h4>
+
+<p>Open block device with <code>fdisk</code></p>
+
+<pre><code>root@ubuntu:~# fdisk /dev/sda
+
+Welcome to fdisk (util-linux 2.31.1).
+Changes will remain in memory only, until you decide to write them.
+Be careful before using the write command.
+
+
+</code></pre>
+
+<p>Print partition table and confirm you&rsquo;re working with the correct disk. Here we see the disk is <code>600 GiB</code> but the partition is only <code>299.5G</code></p>
+
+<pre><code>Command (m for help): p
+Disk /dev/sda: 600 GiB, 644245094400 bytes, 1258291200 sectors
+Units: sectors of 1 * 512 = 512 bytes
+Sector size (logical/physical): 512 bytes / 512 bytes
+I/O size (minimum/optimal): 512 bytes / 512 bytes
+Disklabel type: dos
+Disk identifier: 0x1bf25bb1
+
+Device     Boot  Start       End   Sectors   Size Id Type
+/dev/sda1  *      2048    976895    974848   476M 83 Linux
+/dev/sda2       976896 629145599 628168704 299.5G  5 Extended
+/dev/sda5       978944 629145599 628166656 299.5G 8e Linux LVM
+</code></pre>
+
+<p>Delete logical partition number 5 and extended partition 2.</p>
+
+<pre><code>Command (m for help): d
+Partition number (1,2,5, default 5):
+
+Partition 5 has been deleted.
+
+Command (m for help): d
+Partition number (1,2, default 2):
+
+Partition 2 has been deleted.
+</code></pre>
+
+<p>Create new Extended partition and Logical partitions using default of all available space.</p>
+
+<p>Be sure to answer No when prompted to remove LVM signature.</p>
+
+<pre><code>Command (m for help): n
+Partition type
+   p   primary (1 primary, 0 extended, 3 free)
+   e   extended (container for logical partitions)
+Select (default p): e
+Partition number (2-4, default 2):
+First sector (976896-1258291199, default 976896):
+Last sector, +sectors or +size{K,M,G,T,P} (976896-1258291199, default 1258291199):
+
+Created a new partition 2 of type 'Extended' and of size 599.5 GiB.
+
+Command (m for help): n
+All space for primary partitions is in use.
+Adding logical partition 5
+First sector (978944-1258291199, default 978944):
+Last sector, +sectors or +size{K,M,G,T,P} (978944-1258291199, default 1258291199):
+
+Created a new partition 5 of type 'Linux' and of size 599.5 GiB.
+Partition #5 contains a LVM2_member signature.
+
+Do you want to remove the signature? [Y]es/[N]o: n
+</code></pre>
+
+<p>Printing the partition table should not show the Extended and Logical parition with the new sizes.</p>
+
+<pre><code>Command (m for help): p
+
+Disk /dev/sda: 600 GiB, 644245094400 bytes, 1258291200 sectors
+Units: sectors of 1 * 512 = 512 bytes
+Sector size (logical/physical): 512 bytes / 512 bytes
+I/O size (minimum/optimal): 512 bytes / 512 bytes
+Disklabel type: dos
+Disk identifier: 0x1bf25bb1
+
+Device     Boot  Start        End    Sectors   Size Id Type
+/dev/sda1  *      2048     976895     974848   476M 83 Linux
+/dev/sda2       976896 1258291199 1257314304 599.5G  5 Extended
+/dev/sda5       978944 1258291199 1257312256 599.5G 83 Linux
+</code></pre>
+
+<p>Finally, write out the changes to disk</p>
+
+<pre><code>Command (m for help): w
+The partition table has been altered.
+Failed to update system information about partition 2: Device or resource busy
+
+The kernel still uses the old partitions. The new table will be used at the next reboot.
+Syncing disks.
+</code></pre>
+
+<p>If you get the message above saying it failed to update system information about a partition, run <code>partprobe</code></p>
+
+<pre><code>partprobe
+</code></pre>
+
+<p>In theory, if the kernel cannot reload the partition table you would have to reboot at this point; I&rsquo;ve never had this happen.</p>
+
+<h3 id="resize-the-lvm-physical-volume-and-logical-volume">Resize the LVM Physical Volume and Logical Volume</h3>
+
+<p>Resize the Physical Volume</p>
+
+<pre><code>root@ubuntu:~# pvresize /dev/sda5
+  Physical volume &quot;/dev/sda5&quot; changed
+  1 physical volume(s) resized / 0 physical volume(s) not resized
+</code></pre>
+
+<p>Checking the Physical Volume should now show the new size.</p>
+
+<pre><code>root@ubuntu:~# pvdisplay
+  --- Physical volume ---
+  PV Name               /dev/sda5
+  VG Name               vg00
+  PV Size               599.53 GiB / not usable 0
+  Allocatable           yes
+  PE Size               4.00 MiB
+  Total PE              153480
+  Free PE               76800
+  Allocated PE          76680
+  PV UUID               b16a8e-360d-5d11-ea84-b68b-0d9a-57e182
+</code></pre>
+
+<p>Resize the Logical Volume to fill the Volume Group (<code>-l</code>) and resize the file system (<code>-r</code>).</p>
+
+<pre><code>root@ubuntu:~# lvresize -l 100%VG -r /dev/vg00/lv_root
+  Size of logical volume vg00/lv_root changed from 299.53 GiB (76680 extents) to 599.53 GiB (153480 extents).
+  Logical volume vg00/lv_root successfully resized.
+resize2fs 1.44.1 (24-Mar-2018)
+Filesystem at /dev/mapper/vg00-lv_root is mounted on /; on-line resizing required
+old_desc_blocks = 38, new_desc_blocks = 75
+The filesystem on /dev/mapper/vg00-lv_root is now 157163520 (4k) blocks long.
+</code></pre>
+
+<h3 id="resize-the-filesystem">Resize the filesystem</h3>
+
+<p>Sometimes the on-line resize done by <code>lvresize</code> fails (or I forget to use the <code>-r</code> option), if this happens you can use the native file system tools to resize it.</p>
+
+<pre><code>root@ubuntu:~# resize2fs /dev/vg00/lv_root
+</code></pre>
+
+<h2 id="done">Done!</h2>
+
+<p>Rechecking the output of <code>df -hT</code> should now show the new size available.</p>
+
+<pre><code>root@ubuntu:~# df -hT
+Filesystem               Type      Size  Used Avail Use% Mounted on
+udev                     devtmpfs  956M     0  956M   0% /dev
+tmpfs                    tmpfs     197M  752K  197M   1% /run
+/dev/mapper/vg00-lv_root ext4      590G  235G  330G  42% /
+tmpfs                    tmpfs     985M     0  985M   0% /dev/shm
+tmpfs                    tmpfs     5.0M     0  5.0M   0% /run/lock
+tmpfs                    tmpfs     985M     0  985M   0% /sys/fs/cgroup
+/dev/sda1                ext3      453M  219M  211M  51% /boot
+tmpfs                    tmpfs     197M     0  197M   0% /run/user/1000
+</code></pre></div>
+      </article>
+    </section>
+  </body>
+</html>

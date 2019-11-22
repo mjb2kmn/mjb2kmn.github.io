@@ -1,0 +1,105 @@
+/* Global styles */
+html {
+  --primary-bg-color: #f6f6f6;
+  --code-bg-color: #e8e8e8;
+  --primary-text-color: #303030;
+  --muted-text-color: #606060;
+}
+html, body {
+  height: 100%;
+  width: 100%;
+  padding: 0;
+  margin: 0;
+}
+body {
+  font-size: 16px;
+  font-family: 'Source Serif Pro', serif;
+  color: var(--primary-text-color);
+  background-color: var(--primary-bg-color);
+  display: flex;
+  flex-direction: column;
+}
+
+body > header {
+  flex-grow: 0;
+  font-family: 'Source Sans Pro', sans-serif;
+  border-bottom: 2px solid var(--primary-text-color);
+  margin-bottom: 2em;
+  font-size: 1.25em;
+}
+header nav {
+  width: 100%;
+  max-width: 1000px;
+  margin: auto;
+}
+header nav ul {
+  list-style-type: none;
+  margin: 0;
+  padding: 0;
+  /* back up left margin the amount of left padding on nav link so text will line up */
+  margin-left: -1em;
+}
+header nav ul li {
+  display: inline-block;
+}
+header nav ul li.brand {
+  color: var(--muted-text-color);
+}
+header nav ul li a {
+  display: block;
+  padding: 0.5em 1em;
+}
+header nav ul li a:link {
+  color: inherit;
+  text-decoration: none;
+}
+header nav ul li a:visited{
+  color: inherit;
+  text-decoration: none;
+}
+header nav ul li a:hover {
+  color: inherit;
+  text-decoration: none;
+  background-color: var(--primary-text-color);
+  color: var(--primary-bg-color);
+}
+
+body section.main {
+  flex-grow: 1;
+  width: 100%;
+  max-width: 1000px;
+  margin: auto;
+}
+
+article {
+  margin-bottom: 4em;
+}
+article header {
+  font-size: 1.5em;
+  border-bottom: 1px solid var(--primary-text-color);
+}
+article header a:link {
+  color: inherit;
+  text-decoration: none;
+}
+article header a:visited {
+  color: inherit;
+  text-decoration: none;
+}
+article header a:hover {
+  color: inherit;
+  text-decoration: none;
+}
+article .meta {
+  font-size: 0.8em;
+  color: var(--muted-text-color);
+}
+article div.content code {
+  font-family: 'Source Code Pro', monospace;
+  font-size: 0.9em;
+  background-color: var(--code-bg-color);
+}
+article div.content pre code {
+  display: block;
+  width: 100%;
+}

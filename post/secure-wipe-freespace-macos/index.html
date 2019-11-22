@@ -1,0 +1,55 @@
+<!doctype html>
+<html lang="en">
+    <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>mjb2kmn</title>
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Source+Code+Pro|Source+Sans+Pro|Source+Serif+Pro">
+    <link rel="stylesheet" href="https://mjb2kmn.github.io//css/main.css">
+  </head>
+
+  <body>
+        <header>
+      <nav>
+        <ul>
+          <li class="brand"><a href="https://mjb2kmn.github.io/">mjb2kmn</a></li>
+
+          <li><a href="/post/">Posts</a></li>
+
+        </ul>
+      </nav>
+    </header>
+
+    <section class="main">
+      <article>
+        <header>Secure Wipe Freespace on macOS</header>
+        <div class="meta">
+          <span class="date">2017-08-13</span>
+        </div>
+        <div class="content"><h3 id="why">Why</h3>
+
+<p>After deleting a file with sensitive info in it, or after editing sensitive info out of a file, the data still exists on disk until it&rsquo;s overwritten.</p>
+
+<p>Here is how you can overwrite all free space on your disk, or even wipe all space on a disk requiring it to be repartitioned and formatted.</p>
+
+<h3 id="how">How</h3>
+
+<p>Use <code>diskutil</code> command with the secureErase option. Mulitple methods are available, run <code>diskutil secureErase</code> to see them. In this example I will be writing <code>0x00</code> bytes. Be sure to use your acutal volume name if it&rsquo;s different from the example.</p>
+
+<p>!!! Warning !!!</p>
+
+<p>Do not forget to include <code>freespace</code> option as the default is the wipe the entire volume.</p>
+
+<pre><code>sudo diskutil secureErase freespace 0 /Volumes/Macintosh\ HD
+</code></pre>
+
+<p><code>diskutil</code> can also be used to wipe an entire external drive</p>
+
+<pre><code>sudo diskutil secureErase 0 /dev/disk2
+</code></pre>
+
+<p>Tested on macOS Sierra - 10.12.x.</p></div>
+      </article>
+    </section>
+  </body>
+</html>

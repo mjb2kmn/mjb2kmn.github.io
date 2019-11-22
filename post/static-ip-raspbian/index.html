@@ -1,0 +1,91 @@
+<!doctype html>
+<html lang="en">
+    <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>mjb2kmn</title>
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Source+Code+Pro|Source+Sans+Pro|Source+Serif+Pro">
+    <link rel="stylesheet" href="https://mjb2kmn.github.io//css/main.css">
+  </head>
+
+  <body>
+        <header>
+      <nav>
+        <ul>
+          <li class="brand"><a href="https://mjb2kmn.github.io/">mjb2kmn</a></li>
+
+          <li><a href="/post/">Posts</a></li>
+
+        </ul>
+      </nav>
+    </header>
+
+    <section class="main">
+      <article>
+        <header>Static IP on Raspbian</header>
+        <div class="meta">
+          <span class="date">2017-08-27</span>
+        </div>
+        <div class="content"><p>This has already been written about many times, but I think there is a better way. Most people seem to be configuring static IP addresses with <code>dhcpcd</code>. I question: &ldquo;Why run a DHCP client daemon just to set a static IP?&rdquo;.</p>
+
+<p>Here I will show how to configure a permanent static address without a DHCP client.</p>
+
+<p>This applies to Raspbian Jessie and probably any other Debian-based OS with systemd. You can do this over the network via ssh, but if you make a mistake you may not be able to get back in. Make sure you can plug in a keyboard and monitor if you need to.</p>
+
+<p>All commands require root privilege.</p>
+
+<h2 id="stop-and-disable-dhcpcd">Stop and Disable dhcpcd</h2>
+
+<p>It is important to do this first, or the dhcp client daemon will assign a dynamic IP removing your static address.</p>
+
+<pre><code>systemctl stop dhcpcd
+systemctl disable dhcpcd
+</code></pre>
+
+<h2 id="configure-interface">Configure interface</h2>
+
+<p>Now we can configure <code>/etc/network/interfaces</code> directly.<br />
+Exactly what this configuration looks like will depend on your hardware and needs. I will show only a couple different possible scenarios here.</p>
+
+<h3 id="single-static-interface">Single static interface</h3>
+
+<p>The simplest config is a single wired interface. All previous contents of the interfaces file can be removed.</p>
+
+<pre><code>auto lo
+iface lo inet loopback
+
+auto eth0
+iface eth0 inet static
+  address 10.1.1.100
+  netmask 255.255.255.0
+  gateway 10.1.1.1
+  dns-nameservers 10.1.1.1
+</code></pre>
+
+<p>You should know the proper values to use for your network.</p>
+
+<h3 id="static-wired-dynamic-wireless">Static wired, dynamic wireless</h3>
+
+<pre><code>auto lo
+iface lo inet loopback
+
+auto eth0
+iface eth0 inet static
+  address 10.1.1.100
+  netmask 255.255.255.0
+  gateway 10.1.1.1
+  dns-nameservers 10.1.1.1
+
+auto wlan0
+iface wlan0 inet dhcp
+</code></pre>
+
+<h3 id="interfaces-file-notes">interfaces file notes</h3>
+
+<p>The <code>auto &lt;iface&gt;</code> line is required for the interface to be activated automatically.<br />
+There are more options available but <code>address</code>, <code>netmask</code>, and <code>gateway</code> are the minimum required.<br />
+See <code>man 5 interfaces</code> for more details.</p></div>
+      </article>
+    </section>
+  </body>
+</html>

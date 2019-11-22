@@ -1,0 +1,168 @@
+<!doctype html>
+<html lang="en">
+    <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>mjb2kmn</title>
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Source+Code+Pro|Source+Sans+Pro|Source+Serif+Pro">
+    <link rel="stylesheet" href="https://mjb2kmn.github.io//css/main.css">
+  </head>
+
+  <body>
+        <header>
+      <nav>
+        <ul>
+          <li class="brand"><a href="https://mjb2kmn.github.io/">mjb2kmn</a></li>
+
+          <li><a href="/post/">Posts</a></li>
+
+        </ul>
+      </nav>
+    </header>
+
+    <section class="main">
+      <article>
+        <header>New Experiment</header>
+        <div class="meta">
+          <span class="date">2017-08-11</span>
+        </div>
+        <div class="content"><p>This site is to be an experiment with static site generation and anything else. In the process I might even post some useful content&hellip; maybe.</p>
+
+<h3 id="about-the-site">About the site</h3>
+
+<p>The following attributes may, or may not, be changed at anytime:</p>
+
+<ul>
+<li>Typography</li>
+<li>Color schemes</li>
+<li>Layout</li>
+<li>Content</li>
+<li>Online status</li>
+<li>URL paths</li>
+</ul>
+
+<p>Whole features may, or may not, also be added or removed at anytime:</p>
+
+<ul>
+<li>Searching</li>
+<li>Comments</li>
+<li>Ads</li>
+<li>Syntax highlighting</li>
+<li>Phishing pages<a href="#note1">[1]</a></li>
+<li>The Entire Site</li>
+<li>Browser exploits<a href="#note2">[2]</a></li>
+</ul>
+
+<h3 id="about-the-content">About the content</h3>
+
+<p>Code snippets and commands are likely to show up in many posts. Such as this
+command to list files in your home directory that are 100MB or larger.</p>
+
+<pre><code>find ~ -type f -size +100M
+</code></pre>
+
+<p>Or this Ruby script that finds duplicate files based on an MD5 digest of their contents.</p>
+
+<pre><code>#!/usr/bin/env ruby
+require 'digest/md5'
+
+module DuplicateFileFinder
+  @@file_hash = {}
+  @@recursive = false
+  @@debug = false
+  @@start_time = nil
+  @@end_time = nil
+
+  def self.find path
+    @@start_time = Time.now
+    self.scan_dir path
+    self
+  end
+
+  def self.recursive mode
+    @@recursive = mode
+    self
+  end
+
+  def self.debug mode
+    @@debug = mode
+    self
+  end
+
+  def self.get_stats
+    @@end_time = Time.now
+    puts &quot;files in hash list: #{@@file_hash.size}&quot;
+    puts &quot;elapsed time: #{@@end_time-@@start_time}&quot;
+  end
+
+  private
+
+  def self.scan_dir path
+    Dir.entries(path).each do |e|
+      next if e == '.' || e == '..'
+      file_path = File.join(path, e)
+      if File.directory? file_path
+        self.scan_dir file_path if @@recursive
+      elsif File.file? file_path
+        file_digest = Digest::MD5.hexdigest(IO.read(file_path))
+        if @@file_hash.include?(file_digest)
+          puts &quot;## content match [#{file_digest}]:\n\t#{@@file_hash[file_digest]}\n\t#{file_path}&quot;
+        else
+          @@file_hash[file_digest] = file_path
+          puts &quot;!! no match for [#{file_digest}] #{file_path}&quot; if @@debug
+        end
+      end
+    end
+  end
+
+end
+
+DuplicateFileFinder.recursive(true).find(ARGV[0]).get_stats
+</code></pre>
+
+<p>Maybe even some ASCII art.</p>
+
+<pre><code>                       __________________________
+               __..--/&quot;.'                        '.
+       __..--&quot;&quot;      | |                          |
+      /              | |                          |
+     /               | |    ___________________   |
+    ;                | |   :__________________/:  |
+    |                | |   |                 '.|  |
+    |                | |   |                  ||  |
+    |                | |   |                  ||  |
+    |                | |   |                  ||  |
+    |                | |   |                  ||  |
+    |                | |   |                  ||  |
+    |                | |   |                  ||  |
+    |                | |   |                  ||  |
+    |                | |   |______......-----&quot;\|  |
+    |                | |   |_______......-----&quot;   |
+    |                | |                          |
+    |                | |                          |
+    |                | |                  ____----|
+    |                | |_____.....----|#######|---|
+    |                | |______.....----&quot;&quot;&quot;&quot;       |
+    |                | |                          |
+    |. ..            | |   ,                      |
+    |... ....        | |  (c ----- &quot;&quot;&quot;           .'
+    |..... ......  |\|_|    ____......------&quot;&quot;&quot;|&quot;
+    |. .... .......| |&quot;&quot;&quot;&quot;&quot;&quot;                   |
+    '... ..... ....| |                         |
+      &quot;-._ .....  .| |                         |
+          &quot;-._.....| |             ___...---&quot;&quot;&quot;'
+              &quot;-._.| | ___...---&quot;&quot;&quot;
+                  &quot;&quot;&quot;&quot;&quot;             grp
+</code></pre>
+
+<h3 id="footnotes">Footnotes</h3>
+
+<p><a name="note1">[1]</a>
+This is entirely not true, I will not host phishing pages here</p>
+
+<p><a name="note2">[2]</a>
+Also not true. There will not be any attempt to exploit your browser on this site.</p></div>
+      </article>
+    </section>
+  </body>
+</html>
